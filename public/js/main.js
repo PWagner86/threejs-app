@@ -2,59 +2,102 @@ import * as THREE from 'https://cdn.skypack.dev/three@latest';
 import { OrbitControls } from 'https://cdn.skypack.dev/three@latest/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'https://cdn.skypack.dev/three@latest/examples/jsm/loaders/GLTFLoader.js';
 import Plane from './classes/Plane.js';
+import Cube from './classes/Cube.js';
 import Loader from './classes/Loader.js';
 
 let scene,
 camera,
 renderer,
 controls,
-gltfLoader;
+gltfLoader,
+textureLoader;
 
 const init = () => {
+    // Scene, Camera and Renderer
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
-    renderer = new THREE.WebGLRenderer();
+    renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize( window.innerWidth, window.innerHeight );
     document.body.appendChild( renderer.domElement );
 
+    // OrbitControls, GLTFLoader and TextureLoader
     controls = new OrbitControls(camera, renderer.domElement);
     gltfLoader = new GLTFLoader();
+    textureLoader = new THREE.TextureLoader();
 
+    // PointLight
     const pointLight = new THREE.PointLight( 0xffffff, 1.5);
     pointLight.position.set(10, 15, 20);
 
-    const ground = new Plane(16, 15, 0xffffff).create();
-    ground.rotation.x = Math.PI / 2;
+    // Ground
+    const ground = new Cube(20, 0.67, 20).create();
+    ground.position.set(-0.5, -0.3, -0.5);
+    textureLoader.load('/textures/floor/marble_01_spec_1k.png',
+    (texture) => {
+        ground.material = new THREE.MeshBasicMaterial({ map: texture });
+    },
+    (err) => console.error(`An error happend. ${err}`)
+    );   
 
-    const groundParam = ground.geometry.parameters;
+    // Sidewall
+    const sidewall = new Cube(0.67, 10, 20).create();
+    sidewall.position.set(-10.85, 4.36, -0.5);
+    textureLoader.load('/textures/sandstone/sandstone_blocks_08_diff_1k.png',
+    (texture) => {
+        sidewall.material = new THREE.MeshBasicMaterial({ map: texture });
+    },
+    (err) => console.error(`An error happend. ${err}`)
+    );   
 
-    const sidewall = new Plane(15, 10, 0x50505f).create();
-    sidewall.rotation.y = Math.PI / 2;
-    sidewall.position.set(- groundParam.width / 2, groundParam.height / 3, 0);
+    // Backwall
+    const backwall = new Cube(20.67, 10, 0.67).create();
+    backwall.position.set(-0.85, 4.36, -10.85);
+    textureLoader.load('/textures/sandstone/sandstone_blocks_08_diff_1k.png',
+    (texture) => {
+        backwall.material = new THREE.MeshBasicMaterial({ map: texture });
+    },
+    (err) => console.error(`An error happend. ${err}`)
+    );   
 
-    const backwall = new Plane(16, 10, 0x50505f).create();
-    backwall.position.set(0, groundParam.height / 3, - groundParam.height / 2);
+    // First Floor
+    const firstFloor = new Cube(10.2, 0.67, 20).create();
+    firstFloor.position.set(4.4, 4.6, -0.5);
+    textureLoader.load('/textures/floor/marble_01_spec_1k.png',
+    (texture) => {
+        firstFloor.material = new THREE.MeshBasicMaterial({ map: texture });
+    },
+    (err) => console.error(`An error happend. ${err}`)
+    );
 
-    const midLevel = new Plane(7, 15, 0xa59d9d).create();
-    midLevel.rotation.x = Math.PI / 2;
-    midLevel.position.set(groundParam.width / 3.5, groundParam.height / 3, 0);
+    const firstFloor2 = new Cube(9.8, 0.67, 13.7).create();
+    firstFloor2.position.set(-5.6, 4.6, -3.7);
+    textureLoader.load('/textures/floor/marble_01_spec_1k.png',
+    (texture) => {
+        firstFloor2.material = new THREE.MeshBasicMaterial({ map: texture });
+    },
+    (err) => console.error(`An error happend. ${err}`)
+    );   
+    
+    // Furniture loading
+    const couch = new Loader(gltfLoader, scene, 'modern_couch', 0.025, -5, -0.01, -4.5);
+    const stairs = new Loader(gltfLoader, scene, 'stairs', 0.037, -7.7, -0.01, 8.8);
 
-    const couch = new Loader(gltfLoader, scene, 'modern_couch', 0.015, -5, 0.01, -4.5);
-    const bookShelves = new Loader(gltfLoader, scene, 'book_shelves', 2, 5.9, 6.6, -7.35);
-    const stairs = new Loader(gltfLoader, scene, 'stairs', 0.037, -7.7, 0.01, 8.8);
-
+    // Adding to scene
     scene.add(
        pointLight,
        ground,
        sidewall,
        backwall,
-       midLevel
+       firstFloor,
+       firstFloor2,
     );
-
-    camera.position.set(5, 10, 20);
-
-    const animate = function () {
+    
+    // Cameraposition
+    camera.position.set(7, 5, 20);
+    
+    // Animate
+    const animate = () => {
         requestAnimationFrame( animate );
 
         controls.update();
@@ -62,6 +105,7 @@ const init = () => {
         renderer.render( scene, camera );
     };
 
+    // Screen fits Window
     window.addEventListener('resize', onWindowResize, false);
 
     animate();
@@ -69,9 +113,10 @@ const init = () => {
 
 init();
 
+// Functions
+
 function onWindowResize(){
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
-
